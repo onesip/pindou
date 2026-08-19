@@ -14,6 +14,8 @@
   <script defer src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script defer src="./ocr-patch.js?v=4"></script>
   <script defer src="./app.js?v=4"></script>
+  <script defer src="./mard-colors.js?v=5"></script>
+  <script defer src="./recognition-v5.js?v=5"></script>
 </head>
 <body>
   <header class="topbar">
@@ -124,7 +126,7 @@
 
       <div class="action-stack">
         <button id="autoGridBtn" class="secondary wide" type="button">自动找网格（辅助）</button>
-        <button id="recognizeBtn" class="primary wide" type="button">识别格内颜色编号</button>
+        <button id="recognizeBtn" class="primary wide" type="button">识别颜色 + 格内编号（MARD 291色）</button>
       </div>
 
       <div id="progressBox" class="progress-box hidden">
