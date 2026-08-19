@@ -1,0 +1,14 @@
+{
+  "name": "拼豆定位器",
+  "short_name": "拼豆",
+  "description": "上传拼豆图纸，读取格内颜色编号，并按 5×5 模块定位下豆位置。",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fffaf4",
+  "theme_color": "#fffaf4",
+  "orientation": "any",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
