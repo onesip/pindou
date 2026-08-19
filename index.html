@@ -28,17 +28,17 @@
       <div class="section-title">
         <div>
           <h2>1. 上传图纸</h2>
-          <p>支持普通 19×19 / 20×20、大图 67×67、横图，以及每 5 格粗线模板。</p>
+          <p>先上传原图，后面可以放大、移动、框选识别区域，再框一个格子校准格子大小。</p>
         </div>
       </div>
 
       <div id="dropZone" class="drop-zone" tabindex="0">
         <div class="upload-emoji">🧩</div>
         <strong>从手机相册选图纸</strong>
-        <span>这里使用原生文件输入，不再靠脚本模拟点击</span>
+        <span>按钮本身就是系统原生文件选择，不依赖脚本模拟点击。</span>
         <label class="native-picker primary">
           <span>选择照片</span>
-          <input id="photoInput" type="file" accept="image/*,.png,.jpg,.jpeg,.webp" />
+          <input id="photoInput" type="file" accept="image/*,.png,.jpg,.jpeg,.webp,.heic,.heif" />
         </label>
         <div class="upload-actions">
           <label class="native-picker secondary">
@@ -48,51 +48,81 @@
           <button id="pasteBtn" class="secondary" type="button">粘贴图片</button>
         </div>
       </div>
-
       <div id="uploadError" class="notice error hidden"></div>
-      <div class="hint">电脑也可以把图片拖进上面的区域。iPhone / iPad 建议用 Safari 打开正式网址，不要从“文件”App 直接预览 HTML。</div>
+      <div class="hint">iPhone / iPad 建议用 Safari 打开部署后的网址。电脑也可以拖入图片。</div>
     </section>
 
     <section id="sourceSection" class="card hidden">
       <div class="section-title compact">
         <div>
-          <h2>2. 校准网格</h2>
+          <h2>2. 手动校准图纸</h2>
           <p id="imageMeta">已载入图片</p>
         </div>
         <div class="row-buttons">
-          <button id="rotateLeftBtn" class="ghost icon-btn" type="button">↺</button>
-          <button id="rotateRightBtn" class="ghost icon-btn" type="button">↻</button>
+          <button id="rotateLeftBtn" class="ghost icon-btn" type="button" aria-label="向左旋转">↺</button>
+          <button id="rotateRightBtn" class="ghost icon-btn" type="button" aria-label="向右旋转">↻</button>
         </div>
       </div>
 
-      <div class="preview-shell">
-        <canvas id="sourceCanvas"></canvas>
-        <div id="cropOverlay" class="crop-overlay" aria-hidden="true"></div>
+      <div class="mode-tabs" role="group" aria-label="图纸操作模式">
+        <button id="panModeBtn" class="mode-btn active" type="button">✋ 移动图纸</button>
+        <button id="cropModeBtn" class="mode-btn" type="button">▣ 框识别区域</button>
+        <button id="cellModeBtn" class="mode-btn" type="button">▦ 框一个格子</button>
       </div>
+
+      <div id="sourceViewport" class="source-viewport">
+        <div id="sourceStage" class="source-stage">
+          <canvas id="sourceCanvas"></canvas>
+          <div id="cropOverlay" class="crop-overlay" aria-hidden="true"><span>识别区域</span></div>
+          <div id="cellOverlay" class="cell-overlay hidden" aria-hidden="true"><span>1 格</span></div>
+        </div>
+      </div>
+
+      <div class="source-zoom-row">
+        <button id="zoomOutBtn" class="ghost zoom-btn" type="button">−</button>
+        <input id="sourceZoom" type="range" min="100" max="600" step="5" value="100" aria-label="图纸缩放" />
+        <button id="zoomInBtn" class="ghost zoom-btn" type="button">＋</button>
+        <button id="fitBtn" class="secondary fit-btn" type="button">适应屏幕</button>
+        <b id="sourceZoomValue">1.0×</b>
+      </div>
+
+      <div id="calibrationInfo" class="calibration-info" aria-live="polite">
+        <div><span>识别区域</span><b id="cropInfo">整张图片</b></div>
+        <div><span>单格大小</span><b id="cellInfo">还没框</b></div>
+        <div><span>推算网格</span><b id="gridGuess">待校准</b></div>
+      </div>
+
+      <div class="helper-actions">
+        <button id="clearCropBtn" class="secondary" type="button">重置识别区域</button>
+        <button id="clearCellBtn" class="secondary" type="button">重框一个格子</button>
+        <button id="applyCellBtn" class="primary" type="button" disabled>按单格推算行列</button>
+      </div>
+
+      <div id="interactionHint" class="notice ok">当前是“移动图纸”：单指拖动，双指捏合或下面滑杆缩放。</div>
 
       <div class="control-grid">
         <label>
-          <span>列数</span>
-          <input id="colsInput" inputmode="numeric" type="number" min="5" max="120" placeholder="自动" />
+          <span>列数（横向）</span>
+          <input id="colsInput" inputmode="numeric" type="number" min="1" max="160" placeholder="例如 20" />
         </label>
         <label>
-          <span>行数</span>
-          <input id="rowsInput" inputmode="numeric" type="number" min="5" max="120" placeholder="自动" />
+          <span>行数（纵向）</span>
+          <input id="rowsInput" inputmode="numeric" type="number" min="1" max="160" placeholder="例如 20" />
         </label>
       </div>
 
       <details class="advanced">
-        <summary>识别不准？手动微调裁切</summary>
+        <summary>需要非常精细？再用百分比微调识别边界</summary>
         <div class="slider-grid">
-          <label><span>左边界 <b id="leftVal">0%</b></span><input id="leftCrop" type="range" min="0" max="35" value="0" /></label>
-          <label><span>右边界 <b id="rightVal">100%</b></span><input id="rightCrop" type="range" min="65" max="100" value="100" /></label>
-          <label><span>上边界 <b id="topVal">0%</b></span><input id="topCrop" type="range" min="0" max="35" value="0" /></label>
-          <label><span>下边界 <b id="bottomVal">100%</b></span><input id="bottomCrop" type="range" min="65" max="100" value="100" /></label>
+          <label><span>左边界 <b id="leftVal">0%</b></span><input id="leftCrop" type="range" min="0" max="99" value="0" /></label>
+          <label><span>右边界 <b id="rightVal">100%</b></span><input id="rightCrop" type="range" min="1" max="100" value="100" /></label>
+          <label><span>上边界 <b id="topVal">0%</b></span><input id="topCrop" type="range" min="0" max="99" value="0" /></label>
+          <label><span>下边界 <b id="bottomVal">100%</b></span><input id="bottomCrop" type="range" min="1" max="100" value="100" /></label>
         </div>
       </details>
 
       <div class="action-stack">
-        <button id="autoGridBtn" class="secondary wide" type="button">自动找网格</button>
+        <button id="autoGridBtn" class="secondary wide" type="button">自动找网格（辅助）</button>
         <button id="recognizeBtn" class="primary wide" type="button">识别格内颜色编号</button>
       </div>
 
@@ -107,57 +137,36 @@
       <div class="section-title">
         <div>
           <h2>3. 开始拼</h2>
-          <p>点一种编号，只看这一色；点格子可以标记已放。</p>
+          <p>点颜色编号只看这一色；点格子标记已放。每 5 格会画粗线。</p>
         </div>
       </div>
-
       <div id="stats" class="stats"></div>
-
       <div class="palette-wrap">
-        <div class="palette-head">
-          <strong>颜色编号</strong>
-          <button id="showAllBtn" class="ghost tiny" type="button">显示全部</button>
-        </div>
+        <div class="palette-head"><strong>颜色编号</strong><button id="showAllBtn" class="ghost tiny" type="button">显示全部</button></div>
         <div id="palette" class="palette"></div>
       </div>
-
       <div class="navigator">
-        <div>
-          <span class="muted">当前颜色</span>
-          <strong id="activeCode">全部</strong>
-        </div>
+        <div><span class="muted">当前颜色</span><strong id="activeCode">全部</strong></div>
         <button id="nextBtn" class="primary" type="button">下一个未完成</button>
       </div>
-
       <div id="currentCell" class="current-cell hidden"></div>
-
       <div class="zoom-row">
-        <span>缩放</span>
-        <input id="zoomRange" type="range" min="18" max="54" value="34" />
-        <b id="zoomValue">34</b>
+        <span>工作图缩放</span><input id="zoomRange" type="range" min="18" max="54" value="34" /><b id="zoomValue">34</b>
       </div>
-
-      <div id="gridScroller" class="grid-scroller">
-        <canvas id="gridCanvas"></canvas>
-      </div>
-
+      <div id="gridScroller" class="grid-scroller"><canvas id="gridCanvas"></canvas></div>
       <div class="legend">
-        <span><i class="swatch thick"></i>每 5 格粗线 = 你的实体拼豆板模块</span>
+        <span><i class="swatch thick"></i>每 5 格粗线 = 实体拼豆板模块</span>
         <span><i class="swatch done"></i>打勾 = 已完成</span>
       </div>
-
       <details class="advanced corrections">
         <summary>OCR 有错？手动改编号</summary>
-        <p>先点上面的任意格子，再在这里改编号。改完会自动重新统计。</p>
-        <div class="edit-row">
-          <input id="editCodeInput" maxlength="4" placeholder="例如 H5 / D12" />
-          <button id="saveCodeBtn" class="secondary" type="button">保存编号</button>
-        </div>
+        <p>先点上面的任意格子，再在这里改编号。</p>
+        <div class="edit-row"><input id="editCodeInput" maxlength="4" placeholder="例如 H5 / D12" /><button id="saveCodeBtn" class="secondary" type="button">保存编号</button></div>
       </details>
     </section>
   </main>
 
-  <footer>所有识别都在你的浏览器本地完成，图片不会上传到服务器。</footer>
+  <footer>图片和识别都只在你的浏览器本地处理。</footer>
   <div id="toast" class="toast hidden"></div>
 </body>
 </html>
