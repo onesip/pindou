@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>拼豆定位器</title>
+<style>
+:root{--bg:#f7f7f5;--card:#fff;--text:#191919;--muted:#777;--line:#ddd;--accent:#111;--soft:#f0f0ec}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+.wrap{max-width:900px;margin:0 auto;padding:14px 12px 100px}.top{position:sticky;top:0;z-index:5;background:rgba(247,247,245,.94);backdrop-filter:blur(10px);padding:8px 0 10px}
+h1{font-size:22px;margin:0 0 4px}.sub{font-size:13px;color:var(--muted)}
+.card{background:var(--card);border:1px solid #ecece8;border-radius:18px;padding:14px;margin-top:12px;box-shadow:0 3px 12px rgba(0,0,0,.03)}
+.upload-zone{border:2px dashed #c9c9c1;border-radius:16px;padding:22px 16px;text-align:center;background:#fbfbf9;cursor:pointer;touch-action:manipulation}
+.upload-zone:active{transform:scale(.995)}.upload-title{font-weight:700;font-size:18px}.upload-hint{font-size:13px;color:var(--muted);margin-top:6px}
+input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.btn{border:0;border-radius:12px;padding:12px 10px;font-weight:700;background:#111;color:#fff;font-size:15px}.btn.secondary{background:#eee;color:#111}.btn:disabled{opacity:.45}
+.preview-wrap{overflow:auto;border-radius:14px;background:#efefeb;border:1px solid #e2e2dc;max-height:58vh;touch-action:pan-x pan-y pinch-zoom}.preview-wrap img{display:block;max-width:none;width:100%;height:auto}
+.status{font-size:13px;color:#555;line-height:1.55;margin-top:8px}.status b{color:#111}
+.controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.field{display:flex;flex-direction:column;gap:5px;font-size:12px;color:#666}.field input{width:100%;padding:11px;border:1px solid #ddd;border-radius:10px;font-size:16px;background:#fff}
+.palette{display:flex;gap:8px;overflow:auto;padding-bottom:4px}.chip{min-width:82px;border-radius:12px;padding:10px 9px;border:2px solid transparent;background:#f1f1ed;cursor:pointer}.chip.active{border-color:#111}.sw{height:18px;border-radius:6px;margin-bottom:6px;border:1px solid rgba(0,0,0,.08)}.code{font-weight:800;font-size:14px}.count{font-size:12px;color:#555;margin-top:2px}
+.grid-shell{overflow:auto;border:1px solid #ddd;border-radius:12px;background:#fff;max-height:65vh}.grid{display:grid;width:max-content}.cell{width:34px;height:34px;border-right:1px solid rgba(0,0,0,.18);border-bottom:1px solid rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;user-select:none;position:relative}.cell.major-r{border-right:3px solid #111}.cell.major-b{border-bottom:3px solid #111}.cell.dim{opacity:.12}.cell.done:after{content:'✓';position:absolute;right:2px;bottom:0;font-size:11px;background:#fff;border-radius:10px;padding:0 2px}.empty{background-image:linear-gradient(45deg,#f1f1f1 25%,transparent 25%),linear-gradient(-45deg,#f1f1f1 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#f1f1f1 75%),linear-gradient(-45deg,transparent 75%,#f1f1f1 75%);background-size:12px 12px;background-position:0 0,0 6px,6px -6px,-6px 0}.hidden{display:none!important}.small{font-size:12px;color:#666}.warn{background:#fff7dd;border-color:#f2d77a}.ok{background:#ecf8ef;border-color:#b8e4c0}.err{background:#fff0f0;border-color:#efb9b9}
+@media(min-width:700px){.controls{grid-template-columns:repeat(4,minmax(0,1fr))}.cell{width:32px;height:32px}.wrap{padding-bottom:40px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><h1>拼豆定位器</h1><div class="sub">上传图纸 → 切格 → 读取编号 → 点颜色只看对应位置</div></div>
+
+  <div class="card">
+    <label id="uploadZone" class="upload-zone" for="fileInput">
+      <div class="upload-title">＋ 上传拼豆图纸</div>
+      <div class="upload-hint">支持 JPG / PNG / HEIC（浏览器可读取时）</div>
+    </label>
+    <input id="fileInput" type="file" accept="image/*,.heic,.heif" />
+    <div class="btns">
+      <button id="pickBtn" class="btn">从相册/文件选择</button>
+      <button id="rotateBtn" class="btn secondary" disabled>旋转 90°</button>
+    </div>
+    <div id="status" class="status">尚未上传图纸。</div>
+  </div>
+
+  <div id="previewCard" class="card hidden">
+    <div class="preview-wrap"><img id="preview" alt="图纸预览"></div>
+  </div>
+
+  <div id="setupCard" class="card hidden">
+    <div class="controls">
+      <label class="field">列数（横向格子）<input id="cols" type="number" inputmode="numeric" min="1" max="200" placeholder="例如 20"></label>
+      <label class="field">行数（纵向格子）<input id="rows" type="number" inputmode="numeric" min="1" max="200" placeholder="例如 20"></label>
+      <label class="field">左边界 %<input id="leftPct" type="number" min="0" max="30" step="0.1" value="4"></label>
+      <label class="field">上边界 %<input id="topPct" type="number" min="0" max="30" step="0.1" value="7"></label>
+      <label class="field">右边界 %<input id="rightPct" type="number" min="0" max="30" step="0.1" value="4"></label>
+      <label class="field">下边界 %<input id="bottomPct" type="number" min="0" max="30" step="0.1" value="12"></label>
+      <label class="field">粗线间隔<input id="majorEvery" type="number" min="1" max="20" value="5"></label>
+      <label class="field">编号识别<input value="浏览器 OCR + 颜色补全" disabled></label>
+    </div>
+    <div class="btns">
+      <button id="autoBtn" class="btn secondary">自动估算格数</button>
+      <button id="analyzeBtn" class="btn">开始识别</button>
+    </div>
+    <div class="small" style="margin-top:8px">如果自动格数不准，直接按图纸标注填 20×20、19×18、67×67 等，再重新识别。</div>
+  </div>
+
+  <div id="resultCard" class="card hidden">
+    <div id="summary" class="status"></div>
+    <div id="palette" class="palette"></div>
+    <div style="display:flex;gap:8px;margin:10px 0"><button id="showAllBtn" class="btn secondary" style="flex:1">显示全部</button><button id="clearDoneBtn" class="btn secondary" style="flex:1">清空完成标记</button></div>
+    <div class="grid-shell"><div id="grid" class="grid"></div></div>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const fileInput=$('fileInput'), pickBtn=$('pickBtn'), uploadZone=$('uploadZone'), rotateBtn=$('rotateBtn');
+let imgObj=null, rotation=0, cells=[], activeCode=null, done=new Set(), objectUrl=null;
+
+function setStatus(msg, cls=''){ const s=$('status'); s.className='status '+cls; s.innerHTML=msg; }
+function openPicker(){ try{ fileInput.value=''; fileInput.click(); }catch(e){ setStatus('无法打开文件选择器：'+e.message,'err'); } }
+pickBtn.addEventListener('click',e=>{e.preventDefault();openPicker()});
+uploadZone.addEventListener('click',e=>{ if(e.target!==fileInput){ e.preventDefault(); openPicker(); }});
+fileInput.addEventListener('change',async e=>{ const f=e.target.files&&e.target.files[0]; if(!f){setStatus('没有选择文件。');return;} await loadFile(f); });
+
+async function loadFile(file){
+  setStatus(`正在读取 <b>${file.name}</b>…`);
+  try{
+    if(objectUrl) URL.revokeObjectURL(objectUrl);
+    objectUrl=URL.createObjectURL(file);
+    const im=new Image();
+    im.onload=()=>{ imgObj=im; rotation=0; $('preview').src=objectUrl; $('previewCard').classList.remove('hidden'); $('setupCard').classList.remove('hidden'); rotateBtn.disabled=false; setStatus(`已载入 <b>${file.name}</b>，尺寸 ${im.naturalWidth}×${im.naturalHeight}px。先自动估算，必要时手动改行列数。`,'ok'); autoEstimate(); };
+    im.onerror=()=>{ setStatus('图片读取失败。若是 HEIC，请先在相册中“存储到文件/导出”为 JPG 或 PNG 后再上传。','err'); };
+    im.src=objectUrl;
+  }catch(err){setStatus('上传失败：'+err.message,'err');}
+}
+
+rotateBtn.addEventListener('click',()=>{ if(!imgObj)return; rotation=(rotation+90)%360; const p=$('preview'); p.style.transform=`rotate(${rotation}deg)`; p.style.transformOrigin='center center'; setStatus(`已旋转 ${rotation}°。识别时会按旋转后的方向处理。`,'ok'); });
+
+function getCanvas(){
+  const src=imgObj, a=rotation%180===0?src.naturalWidth:src.naturalHeight, b=rotation%180===0?src.naturalHeight:src.naturalWidth;
+  const c=document.createElement('canvas'); c.width=a; c.height=b; const x=c.getContext('2d'); x.save();
+  if(rotation===0) x.drawImage(src,0,0);
+  if(rotation===90){x.translate(a,0);x.rotate(Math.PI/2);x.drawImage(src,0,0)}
+  if(rotation===180){x.translate(a,b);x.rotate(Math.PI);x.drawImage(src,0,0)}
+  if(rotation===270){x.translate(0,b);x.rotate(-Math.PI/2);x.drawImage(src,0,0)}
+  x.restore(); return c;
+}
+
+function autoEstimate(){
+  if(!imgObj)return;
+  const c=getCanvas(), ctx=c.getContext('2d');
+  const lp=+($('leftPct').value||0)/100, rp=+($('rightPct').value||0)/100, tp=+($('topPct').value||0)/100, bp=+($('bottomPct').value||0)/100;
+  const x0=Math.floor(c.width*lp), x1=Math.floor(c.width*(1-rp)), y0=Math.floor(c.height*tp), y1=Math.floor(c.height*(1-bp));
+  const data=ctx.getImageData(x0,y0,x1-x0,y1-y0), w=data.width,h=data.height;
+  const v=[], hh=[];
+  for(let x=0;x<w;x+=Math.max(1,Math.floor(w/500))){let dark=0;for(let y=0;y<h;y+=4){let i=(y*w+x)*4;let L=(data.data[i]+data.data[i+1]+data.data[i+2])/3;if(L<100)dark++;}v.push([x,dark]);}
+  for(let y=0;y<h;y+=Math.max(1,Math.floor(h/500))){let dark=0;for(let x=0;x<w;x+=4){let i=(y*w+x)*4;let L=(data.data[i]+data.data[i+1]+data.data[i+2])/3;if(L<100)dark++;}hh.push([y,dark]);}
+  const periodic=(arr,total)=>{const vals=arr.map(z=>z[1]), max=Math.max(...vals), pts=arr.filter(z=>z[1]>max*.55).map(z=>z[0]); if(pts.length<3)return null; const gaps=[]; for(let i=1;i<pts.length;i++){let g=pts[i]-pts[i-1]; if(g>3)gaps.push(g)} if(!gaps.length)return null; gaps.sort((a,b)=>a-b); const med=gaps[Math.floor(gaps.length/2)]; if(med<4)return null; return Math.round(total/med)};
+  const ec=periodic(v,w), er=periodic(hh,h);
+  if(ec&&ec<=200)$('cols').value=ec; if(er&&er<=200)$('rows').value=er;
+  if(!ec||!er){ const ratio=w/h; if(ratio>.9&&ratio<1.1){ $('cols').value=$('cols').value||20; $('rows').value=$('rows').value||20; } }
+  setStatus(`已做自动估算：${$('cols').value||'?'} 列 × ${$('rows').value||'?'} 行。请对照图纸顶部/侧面的数字确认。`,'ok');
+}
+$('autoBtn').addEventListener('click',autoEstimate);
+
+function rgbAt(ctx,x,y,r=3){const d=ctx.getImageData(Math.max(0,x-r),Math.max(0,y-r),r*2+1,r*2+1).data;let rr=0,g=0,b=0,n=0;for(let i=0;i<d.length;i+=4){if(d[i+3]<128)continue;rr+=d[i];g+=d[i+1];b+=d[i+2];n++;}return n?[Math.round(rr/n),Math.round(g/n),Math.round(b/n)]:[255,255,255]}
+function dist(a,b){return Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2])}
+function lum(c){return .2126*c[0]+.7152*c[1]+.0722*c[2]}
+
+async function maybeOCR(canvas, regions){
+  if(!window.Tesseract){
+    try{ await new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';s.onload=res;s.onerror=rej;document.head.appendChild(s)});}catch(e){return null;}
+  }
+  try{
+    const worker=await Tesseract.createWorker('eng',1,{logger:m=>{if(m.status==='recognizing text') setStatus(`正在读取格内编号… ${Math.round((m.progress||0)*100)}%`);}});
+    await worker.setParameters({tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',preserve_interword_spaces:'0'});
+    const out=[];
+    for(let i=0;i<regions.length;i++){
+      const r=regions[i]; const cc=document.createElement('canvas'); cc.width=Math.max(28,r.w*4); cc.height=Math.max(28,r.h*4); const x=cc.getContext('2d'); x.imageSmoothingEnabled=false; x.drawImage(canvas,r.x,r.y,r.w,r.h,0,0,cc.width,cc.height);
+      const g=x.getImageData(0,0,cc.width,cc.height); for(let p=0;p<g.data.length;p+=4){const L=(g.data[p]+g.data[p+1]+g.data[p+2])/3; const v=L<150?0:255;g.data[p]=g.data[p+1]=g.data[p+2]=v;}x.putImageData(g,0,0);
+      const rr=await worker.recognize(cc); let t=(rr.data.text||'').toUpperCase().replace(/[^A-Z0-9]/g,''); let m=t.match(/[A-Z]{1,2}\d{1,2}/); out.push(m?m[0]:null);
+    }
+    await worker.terminate(); return out;
+  }catch(e){ return null; }
+}
+
+$('analyzeBtn').addEventListener('click',async()=>{
+  if(!imgObj)return; const cols=+$('cols').value, rows=+$('rows').value; if(!cols||!rows){setStatus('请先填写列数和行数。','warn');return;}
+  if(cols*rows>6000&&!confirm(`这张图有 ${cols*rows} 格，手机处理会比较慢。继续吗？`))return;
+  const c=getCanvas(), ctx=c.getContext('2d'); const lp=+$('leftPct').value/100,rp=+$('rightPct').value/100,tp=+$('topPct').value/100,bp=+$('bottomPct').value/100;
+  const x0=c.width*lp,y0=c.height*tp,w=c.width*(1-lp-rp),h=c.height*(1-tp-bp),cw=w/cols,ch=h/rows;
+  cells=[]; const colors=[]; const regs=[];
+  for(let r=0;r<rows;r++)for(let col=0;col<cols;col++){
+    const cx=Math.round(x0+(col+.5)*cw), cy=Math.round(y0+(r+.5)*ch), rgb=rgbAt(ctx,cx,cy,Math.max(2,Math.floor(Math.min(cw,ch)*.18)));
+    const sat=Math.max(...rgb)-Math.min(...rgb); const isEmpty=lum(rgb)>232&&sat<22;
+    cells.push({r,col,rgb,empty:isEmpty,code:null}); if(!isEmpty) colors.push(rgb);
+    regs.push({x:Math.max(0,Math.floor(x0+col*cw+cw*.12)),y:Math.max(0,Math.floor(y0+r*ch+ch*.12)),w:Math.max(1,Math.floor(cw*.76)),h:Math.max(1,Math.floor(ch*.76))});
+  }
+  const clusters=[]; for(const rgb of colors){let best=null,bd=1e9;for(const cl of clusters){const d=dist(rgb,cl.avg);if(d<bd){bd=d;best=cl}} if(best&&bd<34){best.items.push(rgb);best.avg=[0,1,2].map(k=>Math.round(best.items.reduce((s,q)=>s+q[k],0)/best.items.length))}else clusters.push({avg:rgb.slice(),items:[rgb]});}
+  clusters.sort((a,b)=>b.items.length-a.items.length);
+  const colorFor=rgb=>{let best=null,bd=1e9;for(const cl of clusters){const d=dist(rgb,cl.avg);if(d<bd){bd=d;best=cl}}return best};
+  cells.forEach(cell=>{if(!cell.empty)cell.cluster=colorFor(cell.rgb)});
+
+  let ocr=null; if(cols*rows<=900){ ocr=await maybeOCR(c,regs); } else setStatus('大图已跳过逐格 OCR，将优先用颜色聚类；你仍可手动修正编号。','warn');
+  if(ocr){ for(let i=0;i<cells.length;i++) if(ocr[i]) cells[i].code=ocr[i]; }
+  const clusterCodes=new Map();
+  for(const cl of clusters){const freq={};cells.filter(x=>x.cluster===cl&&x.code).forEach(x=>freq[x.code]=(freq[x.code]||0)+1);const best=Object.entries(freq).sort((a,b)=>b[1]-a[1])[0];if(best)clusterCodes.set(cl,best[0]);}
+  let autoIndex=1; for(const cell of cells){if(cell.empty)continue;if(!cell.code)cell.code=clusterCodes.get(cell.cluster)||('C'+autoIndex++);}
+  renderResult(cols,rows,clusters);
+  setStatus(`识别完成：<b>${cols}×${rows}</b>。已读取/推断格内编号，并按颜色补全。点下面任意编号即可只显示该色位置。`,'ok');
+});
+
+function renderResult(cols,rows){
+  $('resultCard').classList.remove('hidden'); const pal=$('palette');pal.innerHTML=''; const counts={}; const rgbs={};
+  for(const c of cells){if(c.empty)continue;counts[c.code]=(counts[c.code]||0)+1;rgbs[c.code]=c.rgb;}
+  Object.keys(counts).sort().forEach(code=>{const chip=document.createElement('div');chip.className='chip';chip.dataset.code=code;const rgb=rgbs[code];chip.innerHTML=`<div class="sw" style="background:rgb(${rgb.join(',')})"></div><div class="code">${code}</div><div class="count">${counts[code]} 颗</div>`;chip.onclick=()=>{activeCode=activeCode===code?null:code;renderGrid(cols,rows);[...pal.children].forEach(x=>x.classList.toggle('active',x.dataset.code===activeCode));};pal.appendChild(chip)});
+  $('summary').innerHTML=`共 <b>${Object.values(counts).reduce((a,b)=>a+b,0)}</b> 颗，<b>${Object.keys(counts).length}</b> 个编号。粗线每 <b>${+$('majorEvery').value||5}</b> 格。`;
+  renderGrid(cols,rows);
+}
+function renderGrid(cols,rows){const g=$('grid');g.innerHTML='';g.style.gridTemplateColumns=`repeat(${cols},34px)`;const major=+$('majorEvery').value||5;cells.forEach((c,i)=>{const d=document.createElement('div');d.className='cell '+(c.empty?'empty':'');if((c.col+1)%major===0&&c.col<cols-1)d.classList.add('major-r');if((c.r+1)%major===0&&c.r<rows-1)d.classList.add('major-b');if(activeCode&&!c.empty&&c.code!==activeCode)d.classList.add('dim');if(done.has(i))d.classList.add('done');if(!c.empty){d.style.background=`rgb(${c.rgb.join(',')})`;d.style.color=lum(c.rgb)<135?'#fff':'#111';d.textContent=c.code;d.onclick=()=>{if(activeCode&&c.code!==activeCode)return;done.has(i)?done.delete(i):done.add(i);renderGrid(cols,rows)}}g.appendChild(d)});}
+$('showAllBtn').onclick=()=>{activeCode=null;document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));if(cells.length)renderGrid(+$('cols').value,+$('rows').value)};
+$('clearDoneBtn').onclick=()=>{done.clear();if(cells.length)renderGrid(+$('cols').value,+$('rows').value)};
+</script>
+</body>
+</html>
