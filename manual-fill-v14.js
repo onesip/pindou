@@ -1,22 +1,26 @@
-// V19 entrypoint. Keep legacy filename so existing phone/tablet/desktop tabs upgrade in place.
+// V20 entrypoint. Keep legacy filename so existing tabs upgrade in place.
 (() => {
   'use strict';
-  const core=document.createElement('script');
-  core.src='./app-v16.js?v=19';
-  core.onload=()=>{
-    const addon=document.createElement('script');
-    addon.src='./app-v17-addon.js?v=19';
-    addon.onload=()=>{
-      const fix=document.createElement('script');
-      fix.src='./resume-fix-v18.js?v=19';
-      fix.onload=()=>{
-        const responsive=document.createElement('script');
-        responsive.src='./responsive-v19.js?v=19';
-        document.head.appendChild(responsive);
-      };
-      document.head.appendChild(fix);
-    };
-    document.head.appendChild(addon);
-  };
-  document.head.appendChild(core);
+  const load=(src)=>new Promise((resolve,reject)=>{
+    const s=document.createElement('script');
+    s.src=src;
+    s.onload=()=>resolve(s);
+    s.onerror=()=>reject(new Error('load failed: '+src));
+    document.head.appendChild(s);
+  });
+
+  (async()=>{
+    try {
+      await load('./app-v16.js?v=20');
+      await load('./app-v17-addon.js?v=20');
+      try { await load('./responsive-v19.js?v=20'); } catch(e) { console.warn(e); }
+      // Load the compatibility fix LAST so it owns the visible version badge and
+      // cannot block the responsive layer if one optional script fails.
+      await load('./resume-fix-v18.js?v=20');
+    } catch (e) {
+      console.error('[Pindou V20] bootstrap error',e);
+      const badge=document.getElementById('pindouVersionBadge');
+      if(badge) badge.textContent='V20 · 加载异常，请刷新';
+    }
+  })();
 })();
