@@ -1,4 +1,4 @@
-// V20 entrypoint. Keep legacy filename so existing tabs upgrade in place.
+// V21 entrypoint. Keep legacy filename so existing tabs upgrade in place.
 (() => {
   'use strict';
   const load=(src)=>new Promise((resolve,reject)=>{
@@ -11,16 +11,16 @@
 
   (async()=>{
     try {
-      await load('./app-v16.js?v=20');
-      await load('./app-v17-addon.js?v=20');
-      try { await load('./responsive-v19.js?v=20'); } catch(e) { console.warn(e); }
-      // Load the compatibility fix LAST so it owns the visible version badge and
-      // cannot block the responsive layer if one optional script fails.
-      await load('./resume-fix-v18.js?v=20');
+      await load('./app-v16.js?v=21');
+      await load('./app-v17-addon.js?v=21');
+      try { await load('./responsive-v19.js?v=21'); } catch(e) { console.warn(e); }
+      try { await load('./resume-fix-v18.js?v=21'); } catch(e) { console.warn(e); }
+      // Load last so immersive screen can size itself after all existing UI exists.
+      await load('./immersive-responsive-v21.js?v=21');
     } catch (e) {
-      console.error('[Pindou V20] bootstrap error',e);
+      console.error('[Pindou V21] bootstrap error',e);
       const badge=document.getElementById('pindouVersionBadge');
-      if(badge) badge.textContent='V20 · 加载异常，请刷新';
+      if(badge) badge.textContent='V21 · 加载异常，请刷新';
     }
   })();
 })();
