@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="拼豆定位器" />
-  <title>拼豆定位器 · V13</title>
+  <title>拼豆定位器 · V14</title>
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="./styles.css" />
@@ -18,15 +18,15 @@
   <script defer src="./recognition-v6.js?v=6"></script>
   <script defer src="./recognition-v5.js?v=7"></script>
   <script defer src="./recognition-v8.js?v=8"></script>
-  <script defer src="./recognition-v9.js?v=13"></script>
-  <script defer src="./manual-fill-v13.js?v=13"></script>
+  <script defer src="./recognition-v9.js?v=14"></script>
+  <script defer src="./manual-fill-v14.js?v=14"></script>
 </head>
 <body>
   <header class="topbar">
     <div>
       <div class="eyebrow">MOBILE PERLER HELPER</div>
       <h1>拼豆定位器</h1>
-      <div id="pindouVersionBadge" style="display:inline-flex;align-items:center;margin-top:6px;padding:4px 9px;border-radius:999px;background:#191714;color:#fff;font-size:11px;font-weight:800;letter-spacing:.03em;line-height:1.2;">V13 · 点一颗补整色</div>
+      <div id="pindouVersionBadge" style="display:inline-flex;align-items:center;margin-top:6px;padding:4px 9px;border-radius:999px;background:#191714;color:#fff;font-size:11px;font-weight:800;letter-spacing:.03em;line-height:1.2;">V14 · 点一颗补整色</div>
     </div>
     <button id="resetBtn" class="ghost small" type="button">清空</button>
   </header>
@@ -109,8 +109,14 @@
       <div id="interactionHint" class="notice ok">当前是“移动图纸”：单指拖动，双指捏合或下面滑杆缩放。</div>
 
       <div class="control-grid">
-        <label><span>列数（横向）</span><input id="colsInput" inputmode="numeric" type="number" min="1" max="160" placeholder="例如 20" /></label>
-        <label><span>行数（纵向）</span><input id="rowsInput" inputmode="numeric" type="number" min="1" max="160" placeholder="例如 20" /></label>
+        <label>
+          <span>列数（横向）</span>
+          <input id="colsInput" inputmode="numeric" type="number" min="1" max="160" placeholder="例如 20" />
+        </label>
+        <label>
+          <span>行数（纵向）</span>
+          <input id="rowsInput" inputmode="numeric" type="number" min="1" max="160" placeholder="例如 20" />
+        </label>
       </div>
 
       <details class="advanced">
@@ -128,20 +134,63 @@
         <button id="recognizeBtn" class="primary wide" type="button">识别颜色 + 格内编号（MARD 291色）</button>
       </div>
 
-      <div id="progressBox" class="progress-box hidden"><div class="progress-line"><span id="progressText">准备识别…</span><b id="progressPct">0%</b></div><div class="progress-track"><i id="progressBar"></i></div></div>
+      <div id="progressBox" class="progress-box hidden">
+        <div class="progress-line"><span id="progressText">准备识别…</span><b id="progressPct">0%</b></div>
+        <div class="progress-track"><i id="progressBar"></i></div>
+      </div>
       <div id="detectNotice" class="notice hidden"></div>
     </section>
 
     <section id="workSection" class="card hidden">
-      <div class="section-title"><div><h2>3. 开始拼</h2><p>点颜色编号只看这一色；点格子标记已放。每 5 格会画粗线。</p></div></div>
+      <div class="section-title">
+        <div>
+          <h2>3. 开始拼</h2>
+          <p>点颜色编号只看这一色；点格子标记已放。每 5 格会画粗线。</p>
+        </div>
+      </div>
       <div id="stats" class="stats"></div>
-      <div class="palette-wrap"><div class="palette-head"><strong>颜色编号</strong><button id="showAllBtn" class="ghost tiny" type="button">显示全部</button></div><div id="palette" class="palette"></div></div>
-      <div class="navigator"><div><span class="muted">当前颜色</span><strong id="activeCode">全部</strong></div><button id="nextBtn" class="primary" type="button">下一个未完成</button></div>
+      <div class="palette-wrap">
+        <div class="palette-head"><strong>颜色编号</strong><button id="showAllBtn" class="ghost tiny" type="button">显示全部</button></div>
+        <div id="palette" class="palette"></div>
+      </div>
+      <div class="navigator">
+        <div><span class="muted">当前颜色</span><strong id="activeCode">全部</strong></div>
+        <button id="nextBtn" class="primary" type="button">下一个未完成</button>
+      </div>
       <div id="currentCell" class="current-cell hidden"></div>
-      <div class="zoom-row"><span>工作图缩放</span><input id="zoomRange" type="range" min="18" max="54" value="34" /><b id="zoomValue">34</b></div>
+
+      <div id="manualFillV14" style="margin:14px 0;padding:14px;border:2px solid #191714;border-radius:18px;background:#fffaf4;">
+        <div style="font-size:17px;font-weight:900;margin-bottom:5px;">🎯 点一颗豆子，补整色</div>
+        <div style="font-size:12px;line-height:1.55;color:#716b65;margin-bottom:10px;">自动识别漏色时：开启模式 → 点工作图里这种颜色的一颗豆 → 输入正确色号 → 一键补出所有同底色格。</div>
+        <button id="mf14Mode" class="secondary wide" type="button" style="width:100%;min-height:46px;font-weight:900;">开始选一颗参考豆</button>
+        <div id="mf14Info" style="margin:9px 0;padding:9px 10px;border-radius:12px;background:#fff;border:1px solid #eadfd5;font-size:12px;line-height:1.55;">补色功能正在加载…</div>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;">
+          <input id="mf14Code" maxlength="4" placeholder="色号，例如 A4 / E9 / D24" style="min-width:0;height:44px;border:1px solid #dfd7cf;border-radius:11px;padding:0 10px;font-size:17px;text-transform:uppercase;background:#fff;" />
+          <button id="mf14Preview" class="secondary" type="button">预览同色</button>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;margin:10px 0;font-size:12px;color:#716b65;">
+          <span>严格</span><input id="mf14Tol" type="range" min="1.5" max="14" step="0.5" value="4" /><b id="mf14TolVal">4.0</b>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <button id="mf14Missing" class="secondary" type="button">只补漏掉的同色格</button>
+          <button id="mf14All" class="primary" type="button">一键全部标成此色</button>
+        </div>
+        <button id="mf14Undo" class="ghost" type="button" disabled style="width:100%;margin-top:8px;">撤销上一次补色</button>
+      </div>
+
+      <div class="zoom-row">
+        <span>工作图缩放</span><input id="zoomRange" type="range" min="18" max="54" value="34" /><b id="zoomValue">34</b>
+      </div>
       <div id="gridScroller" class="grid-scroller"><canvas id="gridCanvas"></canvas></div>
-      <div class="legend"><span><i class="swatch thick"></i>每 5 格粗线 = 实体拼豆板模块</span><span><i class="swatch done"></i>打勾 = 已完成</span></div>
-      <details class="advanced corrections"><summary>OCR 有错？手动改编号</summary><p>先点上面的任意格子，再在这里改编号。</p><div class="edit-row"><input id="editCodeInput" maxlength="4" placeholder="例如 H5 / D12" /><button id="saveCodeBtn" class="secondary" type="button">保存编号</button></div></details>
+      <div class="legend">
+        <span><i class="swatch thick"></i>每 5 格粗线 = 实体拼豆板模块</span>
+        <span><i class="swatch done"></i>打勾 = 已完成</span>
+      </div>
+      <details class="advanced corrections">
+        <summary>OCR 有错？手动改编号</summary>
+        <p>先点上面的任意格子，再在这里改编号。</p>
+        <div class="edit-row"><input id="editCodeInput" maxlength="4" placeholder="例如 H5 / D12" /><button id="saveCodeBtn" class="secondary" type="button">保存编号</button></div>
+      </details>
     </section>
   </main>
 
