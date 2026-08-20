@@ -1,5 +1,5 @@
-const CACHE='pindou-v23-freeze-fix';
-const SHELL=['./','./index.html','./styles.css','./app.js','./app-v16.js?v=23','./app-v17-addon.js?v=23','./resume-fix-v18.js?v=23','./responsive-v19.js?v=23','./immersive-responsive-v21.js?v=23','./smart-leak-colors-v22.js?v=23','./v22-immersive-toggle-fix.js?v=23','./v23-freeze-hotfix.js?v=23','./ocr-patch.js','./mard-colors.js','./recognition-v6.js','./recognition-v5.js','./recognition-v8.js','./recognition-v9.js?v=14','./manual-fill-v14.js?v=23','./manifest.webmanifest','./icon.svg'];
+const CACHE='pindou-v24-version-lock';
+const SHELL=['./','./index.html','./styles.css','./app.js','./app-v16.js?v=24','./app-v17-addon.js?v=24','./resume-fix-v18.js?v=24','./responsive-v19.js?v=24','./immersive-responsive-v21.js?v=24','./smart-leak-colors-v22.js?v=24','./v22-immersive-toggle-fix.js?v=24','./v23-freeze-hotfix.js?v=24','./ocr-patch.js','./mard-colors.js','./recognition-v6.js','./recognition-v5.js','./recognition-v8.js','./recognition-v9.js?v=14','./manual-fill-v14.js?v=24','./manifest.webmanifest','./icon.svg'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{
