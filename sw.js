@@ -1,5 +1,5 @@
-const CACHE='pindou-v15-direct-bridge';
-const SHELL=['./','./index.html','./styles.css','./app.js','./ocr-patch.js','./mard-colors.js','./recognition-v6.js','./recognition-v5.js','./recognition-v8.js','./recognition-v9.js?v=14','./recognition-v11.js?v=14','./manual-fill-v14.js?v=14','./manifest.webmanifest','./icon.svg'];
+const CACHE='pindou-v16-local-save';
+const SHELL=['./','./index.html','./styles.css','./app.js','./app-v16.js?v=16','./ocr-patch.js','./mard-colors.js','./recognition-v6.js','./recognition-v5.js','./recognition-v8.js','./recognition-v9.js?v=14','./manual-fill-v14.js?v=14','./manifest.webmanifest','./icon.svg'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{
