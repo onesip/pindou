@@ -16,9 +16,8 @@
       try { await load('./responsive-v19.js?v=22'); } catch(e) { console.warn(e); }
       try { await load('./resume-fix-v18.js?v=22'); } catch(e) { console.warn(e); }
       try { await load('./immersive-responsive-v21.js?v=22'); } catch(e) { console.warn(e); }
-      // V22 adds interactive smart-leak confirmation, real-color chips,
-      // and an immersive "show all colors" switch.
       await load('./smart-leak-colors-v22.js?v=22');
+      await load('./v22-immersive-toggle-fix.js?v=22');
     } catch (e) {
       console.error('[Pindou V22] bootstrap error',e);
       const badge=document.getElementById('pindouVersionBadge');
