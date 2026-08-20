@@ -1,5 +1,5 @@
-const CACHE='pindou-v12-visible';
-const SHELL=['./','./index.html','./styles.css','./app.js','./ocr-patch.js','./mard-colors.js','./recognition-v6.js','./recognition-v5.js','./recognition-v8.js','./recognition-v9.js?v=12','./recognition-v11.js?v=12','./smart-fill.js?v=12','./manifest.webmanifest','./icon.svg'];
+const CACHE='pindou-v13-manual-fill';
+const SHELL=['./','./index.html','./styles.css','./app.js','./ocr-patch.js','./mard-colors.js','./recognition-v6.js','./recognition-v5.js','./recognition-v8.js','./recognition-v9.js?v=12','./recognition-v11.js?v=13','./manifest.webmanifest','./icon.svg'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{
