@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   const $=id=>document.getElementById(id);
-  let mode='fit'; // fit | width | original
+  let mode='fit';
   let userScale=1;
   let installed=false;
   let ro=null;
@@ -58,9 +58,7 @@
     $('v21Plus').onclick=()=>{mode='custom';userScale=Math.min(3,currentScale()*1.12);updateButtons();applyScale(userScale,true)};
   }
 
-  function updateButtons(){
-    for(const [id,m] of [['v21Fit','fit'],['v21Width','width'],['v21Original','original']]) $(''+id)?.classList.toggle('active',mode===m);
-  }
+  function updateButtons(){for(const [id,m] of [['v21Fit','fit'],['v21Width','width'],['v21Original','original']]) $(id)?.classList.toggle('active',mode===m)}
   function viewport(){const vv=window.visualViewport;return{w:vv?.width||innerWidth,h:vv?.height||innerHeight}}
   function isLandscape(){const v=viewport();return v.w>v.h*1.08}
   function natural(){const c=$('v17ImCanvas');return{w:c?.width||0,h:c?.height||0}}
@@ -72,23 +70,17 @@
     c.style.width=Math.max(1,Math.round(n.w*scale))+'px';
     c.style.height=Math.max(1,Math.round(n.h*scale))+'px';
     const label=$('v21Scale');if(label)label.textContent=Math.round(scale*100)+'%';
-    if(center) requestAnimationFrame(()=>{scroll.scrollLeft=Math.max(0,(scroll.scrollWidth-scroll.clientWidth)/2);scroll.scrollTop=Math.max(0,(scroll.scrollHeight-scroll.clientHeight)/2)});
+    if(center)requestAnimationFrame(()=>{scroll.scrollLeft=Math.max(0,(scroll.scrollWidth-scroll.clientWidth)/2);scroll.scrollTop=Math.max(0,(scroll.scrollHeight-scroll.clientHeight)/2)});
   }
 
   function fitNow(center=false){
+    markVersion();
     const im=$('v17Immersive'),scroll=$('v17ImScroll'),c=$('v17ImCanvas'),n=natural();if(!im||!scroll||!c||!n.w||!n.h||!im.classList.contains('on'))return;
     const landscape=isLandscape();im.classList.toggle('v21-landscape',landscape);
     requestAnimationFrame(()=>{
-      const pad=landscape?14:18;
-      const aw=Math.max(80,scroll.clientWidth-pad),ah=Math.max(80,scroll.clientHeight-pad);
-      let s=1;
-      if(mode==='fit') s=Math.min(aw/n.w,ah/n.h);
-      else if(mode==='width') s=aw/n.w;
-      else if(mode==='original') s=1;
-      else s=userScale;
-      // Desktop/tablet may upscale, but avoid absurdly huge cells.
-      const cap=landscape?1.85:1.55;s=Math.min(s,cap);
-      applyScale(s,center);
+      const pad=landscape?14:18,aw=Math.max(80,scroll.clientWidth-pad),ah=Math.max(80,scroll.clientHeight-pad);let s=1;
+      if(mode==='fit')s=Math.min(aw/n.w,ah/n.h);else if(mode==='width')s=aw/n.w;else if(mode==='original')s=1;else s=userScale;
+      s=Math.min(s,landscape?1.85:1.55);applyScale(s,center);
     });
   }
 
@@ -96,16 +88,17 @@
     const im=$('v17Immersive'),scroll=$('v17ImScroll'),c=$('v17ImCanvas');if(!im||!scroll||!c)return false;
     ensureControls();
     if(!ro&&window.ResizeObserver){ro=new ResizeObserver(()=>fitNow(false));ro.observe(scroll);ro.observe(im)}
-    if(!mo){mo=new MutationObserver(muts=>{for(const m of muts){if(m.type==='attributes'&&(m.attributeName==='width'||m.attributeName==='height'||m.attributeName==='class')){setTimeout(()=>fitNow(false),20);break}}});mo.observe(c,{attributes:true,attributeFilter:['width','height']});mo.observe(im,{attributes:true,attributeFilter:['class']})}
+    if(!mo){mo=new MutationObserver(muts=>{for(const m of muts){if(m.type==='attributes'){setTimeout(()=>fitNow(false),20);break}}});mo.observe(c,{attributes:true,attributeFilter:['width','height']});mo.observe(im,{attributes:true,attributeFilter:['class']})}
     return true;
   }
 
   function boot(){
     if(installed)return;installed=true;markVersion();addStyles();
     let tries=0;const t=setInterval(()=>{if(observe()||++tries>160)clearInterval(t)},50);
-    const onResize=()=>setTimeout(()=>fitNow(true),80);
-    addEventListener('resize',onResize);addEventListener('orientationchange',()=>setTimeout(()=>fitNow(true),220));
+    const onResize=()=>{markVersion();setTimeout(()=>fitNow(true),80)};
+    addEventListener('resize',onResize);addEventListener('orientationchange',()=>{markVersion();setTimeout(()=>fitNow(true),220)});
     window.visualViewport?.addEventListener('resize',onResize);
+    document.addEventListener('change',e=>{if(e.target?.id==='v19ViewSelect')setTimeout(markVersion,0)},true);
     document.addEventListener('fullscreenchange',()=>setTimeout(()=>fitNow(true),80));
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
