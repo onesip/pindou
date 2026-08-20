@@ -1,5 +1,5 @@
-const CACHE='pindou-v22-smart-leak-colors';
-const SHELL=['./','./index.html','./styles.css','./app.js','./app-v16.js?v=22','./app-v17-addon.js?v=22','./resume-fix-v18.js?v=22','./responsive-v19.js?v=22','./immersive-responsive-v21.js?v=22','./smart-leak-colors-v22.js?v=22','./ocr-patch.js','./mard-colors.js','./recognition-v6.js','./recognition-v5.js','./recognition-v8.js','./recognition-v9.js?v=14','./manual-fill-v14.js?v=22','./manifest.webmanifest','./icon.svg'];
+const CACHE='pindou-v22-smart-leak-colors-2';
+const SHELL=['./','./index.html','./styles.css','./app.js','./app-v16.js?v=22','./app-v17-addon.js?v=22','./resume-fix-v18.js?v=22','./responsive-v19.js?v=22','./immersive-responsive-v21.js?v=22','./smart-leak-colors-v22.js?v=22','./v22-immersive-toggle-fix.js?v=22','./ocr-patch.js','./mard-colors.js','./recognition-v6.js','./recognition-v5.js','./recognition-v8.js','./recognition-v9.js?v=14','./manual-fill-v14.js?v=22','./manifest.webmanifest','./icon.svg'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{
