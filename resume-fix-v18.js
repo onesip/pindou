@@ -1,6 +1,9 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
+  let marked = false;
+  let observer = null;
+  let timer = null;
 
   function toast(msg) {
     const el = $('toast');
@@ -13,11 +16,8 @@
 
   function addLegacyManualShim() {
     const panel = $('manualFillV14');
-    if (!panel || $('v18LegacyManualShim')) return false;
-
-    // app-v16's renderWork() still calls its old manual-fill status updater.
-    // V17 replaced that UI, so the old updater was dereferencing missing mf14* nodes
-    // during resume(), throwing before the work area could be shown.
+    if (!panel) return false;
+    if ($('v18LegacyManualShim')) return true;
     const shim = document.createElement('div');
     shim.id = 'v18LegacyManualShim';
     shim.hidden = true;
@@ -38,8 +38,9 @@
 
   function patchResumeButton() {
     const btn = $('v16ResumeBtn');
-    if (!btn || btn.dataset.v18ResumePatched) return false;
-    btn.dataset.v18ResumePatched = '1';
+    if (!btn) return false;
+    if (btn.dataset.v20ResumePatched) return true;
+    btn.dataset.v20ResumePatched = '1';
     btn.addEventListener('click', () => {
       const label = btn.textContent;
       btn.textContent = '正在恢复…';
@@ -57,34 +58,56 @@
     return true;
   }
 
-  function markVersion() {
-    document.title = '拼豆定位器 · V18';
+  function markVersionOnce() {
+    if (marked) return;
+    marked = true;
+    document.title = '拼豆定位器 · V20';
     const badge = $('pindouVersionBadge');
-    if (badge) badge.textContent = 'V18 · 恢复修复 + 沉浸开拼';
-  }
-
-  function install() {
-    markVersion();
-    addLegacyManualShim();
-    patchResumeButton();
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', install, { once: true });
-  } else {
-    install();
-  }
-
-  // Resume card and V17 repair UI are created asynchronously; keep a lightweight
-  // observer until both have appeared.
-  const observer = new MutationObserver(() => install());
-  observer.observe(document.documentElement, { childList: true, subtree: true });
-  let tries = 0;
-  const timer = setInterval(() => {
-    install();
-    if (++tries > 120 || ($('v18LegacyManualShim') && $('v16ResumeBtn')?.dataset.v18ResumePatched)) {
-      clearInterval(timer);
-      observer.disconnect();
+    if (badge && badge.textContent !== 'V20 · 稳定加载 + 多端适配') {
+      badge.textContent = 'V20 · 稳定加载 + 多端适配';
     }
-  }, 100);
+  }
+
+  function attempt() {
+    markVersionOnce();
+    const shimReady = addLegacyManualShim();
+    const resumeReady = patchResumeButton();
+    if (shimReady && resumeReady) {
+      if (observer) observer.disconnect();
+      if (timer) clearInterval(timer);
+      observer = null;
+      timer = null;
+      return true;
+    }
+    return false;
+  }
+
+  function start() {
+    attempt();
+    if (!observer) {
+      observer = new MutationObserver(() => {
+        // Only look for the two asynchronously-created targets. Do not rewrite
+        // version text here, otherwise observing our own DOM mutations can loop.
+        const shimReady = $('v18LegacyManualShim') || addLegacyManualShim();
+        const resumeReady = $('v16ResumeBtn')?.dataset.v20ResumePatched || patchResumeButton();
+        if (shimReady && resumeReady) {
+          observer.disconnect();
+          observer = null;
+          if (timer) { clearInterval(timer); timer = null; }
+        }
+      });
+      observer.observe(document.body || document.documentElement, { childList: true, subtree: true });
+    }
+    let tries = 0;
+    timer = setInterval(() => {
+      if (attempt() || ++tries > 120) {
+        clearInterval(timer);
+        timer = null;
+        if (tries > 120 && observer) { observer.disconnect(); observer = null; }
+      }
+    }, 100);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
+  else start();
 })();
